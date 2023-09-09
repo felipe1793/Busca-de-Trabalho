@@ -4,6 +4,9 @@ const app = express();
 const db = require("./db/connection");
 const path = require("path")
 const bodyParser = require("body-parser");
+const job = require("./models/Job");
+const sequelize = require("sequelize");
+const Op = sequelize.Op
 
 const port = 3000;
 
@@ -16,9 +19,12 @@ app.listen(port, () => {
 app.use(bodyParser.urlencoded({extended:false}));
 
 // handle bars
-app.set("views", path(__dirname, "views"));
-app.engine("handlebars", exphbs({defaultLayout: 'main'}));
+app.set("views", path.join(__dirname, "views"));
+app.engine("handlebars", exphbs.engine({defaultLayout: 'main'}));
 app.set("view engine", "handlebars")
+
+// static folder
+app.use(express.static(path.join(__dirname, "public")))
 
 // DB connection
 db.authenticate().then(() => {
@@ -30,7 +36,30 @@ db.authenticate().then(() => {
 // Routes
 
 app.get("/", (req, res) => {
-    res.send("Estou funcionando");
+
+    let search = req.query.job
+    let query = "%"+search+"%" //PH -> PHP, word -> wordpress, py -> python
+
+    if(!search) {
+        job.findAll({order: [
+            ["createdAt", "DESC"]
+        ]}).then(jobs => {
+            res.render("index", {jobs});
+        })
+        .catch(err => console.log(err))
+    } else {
+        job.findAll({
+            where: { title:{[Op.like]: query}},
+            order: [
+            ["createdAt", "DESC"]
+        ]}).then(jobs => {
+            res.render("index", {
+                jobs, search
+            });
+        })
+        .catch(err => console.log(err))
+    }
+
 });
 
 app.use("/jobs", require("./routes/jobs"))
