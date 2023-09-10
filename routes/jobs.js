@@ -19,8 +19,19 @@ router.post("/add", (req, res) => {
     
 });
 
+// Detalhe da vaga
+router.get("/view/:id", (req, res) => {
+    job.findOne({
+        where:{id: req.params.id}
+    }).then(job => {
+        res.render("view", {job})
+    })
+})
+
+// Rota do form de envio
 router.get("/add", (req, res)=> {
     res.render("add")
 })
+
 
 module.exports = router;
